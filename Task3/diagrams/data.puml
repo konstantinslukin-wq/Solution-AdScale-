@@ -1,0 +1,42 @@
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+
+title Data Flow
+
+
+Container(Request, "Request")
+Container(Ad, "Ad Server подбор компаний")
+ContainerDb(dbComapny, "DB Comapny")
+ContainerDb(dbFinance, "DB Finance")
+Container(Auction, "Auction")
+ContainerDb(dbAuction, "DB Auction")
+Container(Response, "Response")
+Container(Delivery, "Delivery")
+ContainerDb(dbKafka, "kafka")
+Container(Finance, "Finance")
+ContainerDb(dbClickhouse, "Clickhouse Аналитикаы")
+
+
+Rel(Request, Ad, "Запрос показа")
+Rel(dbComapny, Ad, "Кандидаты для показа")
+Rel(Ad, Auction, "Запрос аукциона")
+Rel(dbFinance, Auction, "Данные для аукциона")
+Rel(Auction, Response, "Ответ DSP")
+Rel(Auction, Delivery, "Запрос генерации показа")
+Rel(Auction, dbAuction, "Данные аукционов")
+Rel(Delivery, dbKafka, "Показы")
+Rel(dbKafka, dbClickhouse, "Данные логов и показов")
+Rel(Request, dbKafka, "Логи")
+Rel(Ad, dbKafka, "Логи")
+Rel(Auction, dbKafka, "Логи")
+Rel(Response, dbKafka, "Логи")
+Rel(Delivery, dbKafka, "Логи")
+Rel(dbKafka, Finance, "Показы")
+Rel(Finance, dbFinance, "Финансовые данные")
+Rel(dbAuction, dbClickhouse, "Данные аукционов")
+Rel(dbFinance, dbClickhouse, "Финансовые данные")
+Rel(dbComapny, dbClickhouse, "Данные компаний")
+
+@enduml

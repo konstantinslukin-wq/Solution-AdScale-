@@ -1,0 +1,76 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_LEFT_RIGHT()
+
+title C4 Container Diagram — AdScale (TO-BE)
+
+' ====================== Акторы ======================
+Person(advertiser, "Рекламодатель", "Управляет кампаниями, бюджетами и ставками через личный кабинет")
+Person_Ext(endUser, "Пользователь сайта/приложения", "Просматривает рекламу, кликает по баннерам")
+
+System_Ext(dspPartner, "DSP-партнёр", "Отправляет bid requests, получает bid responses по OpenRTB")
+System_Ext(paymentGateway, "Платёжный шлюз", "Обработка пополнения рекламных бюджетов")
+
+' ====================== Монолит ======================
+System_Boundary(microsevice, "AdScale") {
+
+    Container(adServer, "Ad Server", "C++, Go", "Принимает HTTP-запросы, определяет пользователя, подбирает кандидатов в рекламу")
+
+    Container(auctionEngine, "Auction Engine", "C++", "Взвешивание ставок, бизнес-правила, расчёт победителя аукциона")
+
+    Container(deliveryService, "Delivery Service", "Node.js", "Формирует HTML/JS-разметку баннера и HTTP response")
+
+    Container(statsService, "Statistics Service", "Python", "Запись кликов и показов")
+    
+    Container(financialService, "Financial Service", "Go", "Списание средств, выставление счетов, управление балансами")
+
+    Container(analyticsService, "Analytics Service", "Python", "Аналитические SQL-запросы")
+
+    Container(adCabinet, "Advertiser Dashboard", "Node.js + JavaScript", "Web UI: управление кампаниями, отчётность")
+
+    Container(api, "API Gateway", "", "")
+
+}
+
+' ====================== База данных ======================
+Container(balancer_auction, "Postgres balancer", "", "Балансировщик запросов запись master/чтение slaves")
+ContainerDb(redis_auction, "Redis", "Redis Aution", "Кеш аукционов")
+ContainerDb(postgres_auction, "PostgreSQL", "PostgreSQL Aution", "БД: кампании, ставки")
+ContainerDb(postgres_finance, "PostgreSQL", "PostgreSQL Finance", "БД: финансов")
+ContainerDb(kafka, "Kafka", "Kafka stat", "Буфер статистики")
+ContainerDb(click, "ClickHouseDB", "Analitics DB", "БД аналитики")
+ContainerDb(redis_ad, "Redis", "Redis AdService", "Кеш Ad")
+' ====================== Связи ======================
+
+' Внешние связи
+Rel_U(dspPartner, api, "Bid requests / responses", "HTTPS / OpenRTB")
+Rel_U(endUser, api, "Просмотр рекламы и клики", "HTTPS")
+Rel(advertiser, adCabinet, "Управляет кампаниями и бюджетами", "HTTPS")
+Rel(adCabinet, paymentGateway, "Пополнение бюджета", "HTTPS / REST")
+
+' Внутренние связи
+Rel(adServer, auctionEngine, "Передаёт кандидатов", "gRPC")
+Rel(auctionEngine, deliveryService, "Передаёт победителя аукциона", "gRPC")
+Rel(deliveryService, statsService, "Регистрирует показы/клики", "gRPC")
+Rel(adCabinet, financialService, "Управление финансами", "gRPC")
+Rel(adCabinet, analyticsService, "Запросы аналитики", "gRPC")
+Rel(adServer, api,  "Bid requests / responses", "HTTPS / OpenRTB")
+Rel(deliveryService, api, "Просмотр рекламы и клики", "HTTPS")
+' Связи с БД
+Rel(balancer_auction, postgres_auction, "Запрос", "Internal")
+Rel(auctionEngine, redis_auction, "Читает ставки и кампании/заполнение кеша", "Sync")
+Rel(auctionEngine, balancer_auction, "Читает ставки и кампании", "JDBC")
+Rel(statsService, kafka, "Запись событий в буфер", "Kafka")
+Rel(kafka, click, "Запись событий", "Click KafkaEngine")
+Rel(kafka, financialService, "Анализ событий", "KafkaStreaming")
+Rel(financialService, postgres_finance, "Транзакции и балансы", "JDBC")
+Rel(analyticsService, click, "Тяжёлые аналитические запросы", "JDBC")
+Rel(adCabinet, balancer_auction, "CRUD операций", "JDBC")
+Rel(adServer, redis_ad, "Чтение данных для таргетинга/заполнение кеша", "JDBC")
+Rel(adServer, balancer_auction, "Чтение данных для таргетинга", "JDBC")
+
+' ====================== Аннотации проблемных мест ======================
+
+@enduml

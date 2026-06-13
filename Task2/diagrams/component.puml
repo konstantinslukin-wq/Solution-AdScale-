@@ -1,0 +1,31 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+
+title C4 Component Bidding Services
+
+System_Ext(dspPartner, "DSP-партнёр", "Отправляет bid requests, получает bid responses по OpenRTB")
+Container(apiGateway, "API Gateway", "apiGateway")
+
+System_Boundary(bidding, "Bidding Services") {
+    Container(BidServices, "DSP bid Server", "Go", "Обрабатывает OpenRTM")    
+    Container(adServer, "Ad Server", "C++, Go", "Определяет пользователя, подбирает кандидатов в рекламу")
+    Container(auctionEngine, "Auction Engine", "C++", "Взвешивание ставок, бизнес-правила, расчёт победителя аукциона")
+}
+Container(deliveryService, "Delivery Service", "Node.js", "Формирует HTML/JS-разметку баннера и HTTP response")
+
+
+Rel_U(dspPartner, apiGateway, "bid Request/Response", "REST API")
+Rel_U(apiGateway, dspPartner, "Banner", "HTML")
+
+Rel(apiGateway, BidServices, "bid Request/Response", "REST API")
+Rel(deliveryService, apiGateway, "Banner", "HTML")
+
+
+Rel(BidServices, adServer, "Запрос кандадатов", "gRPC")
+Rel(BidServices, auctionEngine, "Проведение Аукциона", "gRPC")
+Rel(auctionEngine, deliveryService, "Передаёт победителя аукциона", "gRPC")
+
+@enduml

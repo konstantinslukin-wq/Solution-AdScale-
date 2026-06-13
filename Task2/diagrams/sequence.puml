@@ -1,0 +1,17 @@
+@startuml DSP Exchange
+
+title Exchange with DSP platform
+
+participant "DSP" as DSP
+participant "BidServices" as BidServices
+participant "ad Server" as Candidats
+participant "Auction Server" as Auction
+
+DSP -> BidServices : BidRequest
+BidServices --> Candidats : GetCandidate
+Candidats --> BidServices : candidates []
+BidServices -> Auction : startAuction({candidates})
+Auction --> BidServices : winner
+BidServices -> DSP : BidResponse
+
+@enduml 

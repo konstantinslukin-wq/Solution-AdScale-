@@ -29,6 +29,9 @@ System_Boundary(microsevice, "AdScale") {
     Container(analyticsService, "Analytics Service", "Python", "Аналитические SQL-запросы")
 
     Container(adCabinet, "Advertiser Dashboard", "Node.js + JavaScript", "Web UI: управление кампаниями, отчётность")
+
+    Container(api, "API Gateway", "", "")
+
 }
 
 ' ====================== База данных ======================
@@ -42,8 +45,8 @@ ContainerDb(redis_ad, "Redis", "Redis AdService", "Кеш Ad")
 ' ====================== Связи ======================
 
 ' Внешние связи
-Rel_U(dspPartner, adServer, "Bid requests / responses", "HTTPS / OpenRTB")
-Rel_U(endUser, deliveryService, "Просмотр рекламы и клики", "HTTPS")
+Rel_U(dspPartner, api, "Bid requests / responses", "HTTPS / OpenRTB")
+Rel_U(endUser, api, "Просмотр рекламы и клики", "HTTPS")
 Rel(advertiser, adCabinet, "Управляет кампаниями и бюджетами", "HTTPS")
 Rel(adCabinet, paymentGateway, "Пополнение бюджета", "HTTPS / REST")
 
@@ -53,7 +56,8 @@ Rel(auctionEngine, deliveryService, "Передаёт победителя ау�
 Rel(deliveryService, statsService, "Регистрирует показы/клики", "gRPC")
 Rel(adCabinet, financialService, "Управление финансами", "gRPC")
 Rel(adCabinet, analyticsService, "Запросы аналитики", "gRPC")
-
+Rel(adServer, api,  "Bid requests / responses", "HTTPS / OpenRTB")
+Rel(deliveryService, api, "Просмотр рекламы и клики", "HTTPS")
 ' Связи с БД
 Rel(balancer_auction, postgres_auction, "Запрос", "Internal")
 Rel(auctionEngine, redis_auction, "Читает ставки и кампании/заполнение кеша", "Sync")
